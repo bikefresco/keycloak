@@ -1,0 +1,36 @@
+version: '3.7'
+services:
+
+  keycloak:
+    container_name: keycloak
+    image: tenlubo/bikekeycloak:bikefresco
+    restart: unless-stopped
+    networks:
+      - alfresco-net
+
+  nginx:
+    image: tenlubo/nginx-bikefresco:latest
+    restart: unless-stopped
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - alfresco-net
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+        - alfresco-net
+
+networks:
+  alfresco-net:
+    driver: bridge
